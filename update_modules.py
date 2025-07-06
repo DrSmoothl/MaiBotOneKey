@@ -388,7 +388,7 @@ def main():
     print(f"{'='*60}")
     
     for repo in repositories:
-        if update_repository(str(repo['path']), repo['name'], repo['remote_urls'], repo.get('force_reset', False)):
+        if update_repository(str(repo['path']), repo['name'], repo['remote_urls'], repo['force_reset']):
             update_success_count += 1
     
     # 第二阶段：安装依赖
