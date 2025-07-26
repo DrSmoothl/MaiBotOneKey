@@ -7,6 +7,29 @@ def is_valid_qq(qq_str):
     # 检查是否为纯数字
     return bool(re.match(r'^\d+$', qq_str))
 
+def get_available_versions():
+    """获取可用的QQ版本列表"""
+    versions = []
+    
+    # 检查napcat目录中的版本
+    napcat_versions_dir = Path('./modules/napcat/versions')
+    if napcat_versions_dir.exists():
+        versions.extend([
+            version_dir.name for version_dir in napcat_versions_dir.iterdir()
+            if version_dir.is_dir() and version_dir.name != 'config.json'
+        ])
+    
+    # 检查napcatframework目录中的版本（合并去重）
+    napcatframework_versions_dir = Path('./modules/napcatframework/versions')
+    if napcatframework_versions_dir.exists():
+        framework_versions = [
+            version_dir.name for version_dir in napcatframework_versions_dir.iterdir()
+            if version_dir.is_dir() and version_dir.name != 'config.json' and version_dir.name not in versions
+        ]
+        versions.extend(framework_versions)
+    
+    return sorted(versions)
+
 def create_napcat_config(qq_number):
     # 创建napcat配置文件
     config = {
@@ -19,23 +42,34 @@ def create_napcat_config(qq_number):
         "o3HookMode": 1
     }
     
-    # 确保目录存在
-    config_dir_1 = Path('./modules/napcat/versions/9.9.19-34740/resources/app/napcat/config') #路径已更新
-    config_dir_1.mkdir(parents=True, exist_ok=True)
+    # 获取所有可用版本
+    available_versions = get_available_versions()
     
-    # 创建配置文件
-    config_path_1 = config_dir_1 / f'napcat_{qq_number}.json'
-    with open(config_path_1, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+    if not available_versions:
+        print("警告：未找到任何QQ版本，使用默认版本")
+        available_versions = ["9.9.19-34740"]
+    
+    print(f"找到 {len(available_versions)} 个QQ版本：{', '.join(available_versions)}")
+    
+    # 为每个版本创建配置文件
+    for version in available_versions:
+        # napcat路径
+        config_dir_1 = Path(f'./modules/napcat/versions/{version}/resources/app/napcat/config')
+        config_dir_1.mkdir(parents=True, exist_ok=True)
+        
+        config_path_1 = config_dir_1 / f'napcat_{qq_number}.json'
+        with open(config_path_1, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        print(f"已创建napcat配置文件：{config_path_1}")
 
-    # 新增第二个配置路径
-    config_dir_2 = Path('./modules/napcatframework/versions/9.9.19-34740/resources/app/LiteLoader/plugins/NapCat/config')
-    config_dir_2.mkdir(parents=True, exist_ok=True)
+        # napcatframework路径
+        config_dir_2 = Path(f'./modules/napcatframework/versions/{version}/resources/app/LiteLoader/plugins/NapCat/config')
+        config_dir_2.mkdir(parents=True, exist_ok=True)
 
-    # 在第二个路径创建配置文件
-    config_path_2 = config_dir_2 / f'napcat_{qq_number}.json'
-    with open(config_path_2, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+        config_path_2 = config_dir_2 / f'napcat_{qq_number}.json'
+        with open(config_path_2, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        print(f"已创建napcatframework配置文件：{config_path_2}")
 
 def create_onebot_config(qq_number):
     # 创建OneBot11配置文件
@@ -64,23 +98,35 @@ def create_onebot_config(qq_number):
     "enableLocalFile2Url": False,
     "parseMultMsg": False
     }
-      # 确保目录存在
-    config_dir_1 = Path('./modules/napcat/versions/9.9.19-34740/resources/app/napcat/config') #路径已更新
-    config_dir_1.mkdir(parents=True, exist_ok=True)
     
-    # 创建配置文件
-    config_path_1 = config_dir_1 / f'onebot11_{qq_number}.json'
-    with open(config_path_1, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+    # 获取所有可用版本
+    available_versions = get_available_versions()
+    
+    if not available_versions:
+        print("警告：未找到任何QQ版本，使用默认版本")
+        available_versions = ["9.9.19-34740"]
+    
+    print(f"为 {len(available_versions)} 个版本创建OneBot11配置")
+    
+    # 为每个版本创建配置文件
+    for version in available_versions:
+        # napcat路径
+        config_dir_1 = Path(f'./modules/napcat/versions/{version}/resources/app/napcat/config')
+        config_dir_1.mkdir(parents=True, exist_ok=True)
+        
+        config_path_1 = config_dir_1 / f'onebot11_{qq_number}.json'
+        with open(config_path_1, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        print(f"已创建OneBot11配置文件：{config_path_1}")
 
-    # 新增第二个配置路径
-    config_dir_2 = Path('./modules/napcatframework/versions/9.9.19-34740/resources/app/LiteLoader/plugins/NapCat/config')
-    config_dir_2.mkdir(parents=True, exist_ok=True)
+        # napcatframework路径
+        config_dir_2 = Path(f'./modules/napcatframework/versions/{version}/resources/app/LiteLoader/plugins/NapCat/config')
+        config_dir_2.mkdir(parents=True, exist_ok=True)
 
-    # 在第二个路径创建配置文件
-    config_path_2 = config_dir_2 / f'onebot11_{qq_number}.json'
-    with open(config_path_2, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+        config_path_2 = config_dir_2 / f'onebot11_{qq_number}.json'
+        with open(config_path_2, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        print(f"已创建OneBot11配置文件：{config_path_2}")
 
 def update_qq_in_config(path: str, qq_number: int):  # 确保 qq_number 是整数
     config_path = Path(path)
