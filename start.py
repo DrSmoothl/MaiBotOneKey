@@ -841,7 +841,27 @@ def launch_python_cmd():
     return create_cmd_window(script_dir, "echo Python environment ready. You can now run Python scripts. Type 'exit' to close.")
 
 def launch_sqlite_studio():
-    """启动SQLiteStudio可视化数据库管理工具"""
+    """启动数据库可视化管理工具"""
+    # 首先检查是否存在 DB Browser for SQLite
+    db_browser_dir = get_absolute_path('modules/DB.Browser.for.SQLite')
+    db_browser_exe = os.path.join(db_browser_dir, 'DB Browser for SQLite.exe')
+    maibot_db_path = get_absolute_path('modules/MaiBot/data/MaiBot.db')
+    
+    if os.path.exists(db_browser_dir) and os.path.exists(db_browser_exe):
+        try:
+            # 使用 DB Browser for SQLite 打开数据库文件
+            if os.path.exists(maibot_db_path):
+                subprocess.Popen([db_browser_exe, maibot_db_path], cwd=db_browser_dir)
+                logger.info("DB Browser for SQLite 已启动并打开数据库")
+            else:
+                subprocess.Popen([db_browser_exe], cwd=db_browser_dir)
+                logger.info("DB Browser for SQLite 已启动（数据库文件不存在）")
+            return True
+        except Exception as e:
+            logger.error(f"错误：启动DB Browser for SQLite时出现异常：{str(e)}")
+            # 如果启动失败，继续尝试启动 SQLiteStudio
+    
+    # 回退到启动 SQLiteStudio
     sqlite_studio_path = get_absolute_path('modules/SQLiteStudio/SQLiteStudio.exe')
     if not os.path.exists(sqlite_studio_path):
         logger.error(f"错误：找不到SQLiteStudio可执行文件 {sqlite_studio_path}")
