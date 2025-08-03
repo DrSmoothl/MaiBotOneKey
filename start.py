@@ -14,7 +14,7 @@ except ImportError:
 import requests
 
 
-ONEKEY_VERSION = "4.1.4" 
+ONEKEY_VERSION = "4.1.5" 
 
 def get_absolute_path(relative_path: str) -> str:
     """获取绝对路径
@@ -987,7 +987,6 @@ def start_maibot_learning():
     
     # 检查所需脚本是否存在
     required_scripts = [
-        'raw_data_preprocessor.py',
         'info_extraction.py', 
         'import_openie.py'
     ]
@@ -1007,7 +1006,6 @@ def start_maibot_learning():
         
         # 构建批处理命令，依次执行三个脚本，工作目录在MaiBot根目录
         learning_command = (
-            f'"{python_path}" scripts/raw_data_preprocessor.py && '
             f'"{python_path}" scripts/info_extraction.py && '
             f'"{python_path}" scripts/import_openie.py && '
             'echo. && echo 🎉 麦麦学习流程已完成！ && pause'
