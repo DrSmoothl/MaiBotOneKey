@@ -72,6 +72,21 @@ echo.
 echo [信息] 设置 Node.js 环境变量....
 echo.
 set "PATH=%NODEJS_DIR%;%PATH%"
+set "NODE_PATH=%NODEJS_DIR%\node_modules"
+set "npm_config_prefix=%NODEJS_DIR%"
+
+:: 验证 Node.js 是否可用
+echo [验证] 检查 Node.js 环境....
+"%NODEJS_DIR%\node.exe" --version
+if %errorlevel% neq 0 (
+    echo.
+    echo [错误] Node.js 无法正常运行.
+    echo        请检查 Node.js 运行时是否完整.
+    echo.
+    pause
+    exit /b 1
+)
+echo [成功] Node.js 环境验证通过.
 
 :: 显示当前目录
 echo.
@@ -110,7 +125,6 @@ if %errorlevel% equ 0 (
     echo 现在您可以正常使用 WebUI 功能了！.
     echo.
     pause
-    exit /b 0
 )
 echo.
 echo [失败] 使用淘宝源安装依赖失败，尝试下一个源....
@@ -134,7 +148,6 @@ if %errorlevel% equ 0 (
     echo 现在您可以正常使用 WebUI 功能了！.
     echo.
     pause
-    exit /b 0
 )
 echo.
 echo [失败] 使用腾讯源安装依赖失败，尝试下一个源....
@@ -158,7 +171,6 @@ if %errorlevel% equ 0 (
     echo 现在您可以正常使用 WebUI 功能了！.
     echo.
     pause
-    exit /b 0
 )
 echo.
 echo [失败] 使用华为源安装依赖失败，尝试下一个源....
@@ -182,7 +194,6 @@ if %errorlevel% equ 0 (
     echo 现在您可以正常使用 WebUI 功能了！.
     echo.
     pause
-    exit /b 0
 )
 echo.
 echo [失败] 使用官方源安装依赖失败.
@@ -206,4 +217,3 @@ echo   cd "%HMML_DEMON_DIR%".
 echo   "%PNPM_PATH%" install.
 echo.
 pause
-exit /b 1
