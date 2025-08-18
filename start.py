@@ -840,6 +840,67 @@ def launch_python_cmd():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return create_cmd_window(script_dir, "echo Python environment ready. You can now run Python scripts. Type 'exit' to close.")
 
+def launch_hmml_webui():
+    """启动HMML WebUI"""
+    # 获取 Node.js 路径
+    node_path = get_absolute_path('runtime/nodejs/node.exe')
+    
+    # 前端和后端目录
+    frontend_dir = get_absolute_path('modules/HMMLPanel')
+    backend_dir = get_absolute_path('modules/HMMLDemon')
+    
+    # 检查必要文件是否存在
+    if not os.path.exists(node_path):
+        logger.error(f"错误：找不到 Node.js 可执行文件 {node_path}")
+        return False
+    
+    if not validate_directory_exists(frontend_dir):
+        logger.error(f"错误：找不到前端目录 {frontend_dir}")
+        return False
+    
+    if not validate_directory_exists(backend_dir):
+        logger.error(f"错误：找不到后端目录 {backend_dir}")
+        return False
+    
+    frontend_server_file = os.path.join(frontend_dir, 'server.cjs')
+    backend_start_file = os.path.join(backend_dir, 'start.js')
+    
+    if not os.path.exists(frontend_server_file):
+        logger.error(f"错误：找不到前端服务文件 {frontend_server_file}")
+        return False
+    
+    if not os.path.exists(backend_start_file):
+        logger.error(f"错误：找不到后端启动文件 {backend_start_file}")
+        return False
+    
+    try:
+        # 启动前端服务器
+        frontend_command = f'start http://localhost:7998 && "{node_path}" server.cjs'
+        frontend_success = create_cmd_window(frontend_dir, frontend_command)
+        
+        if frontend_success:
+            logger.info("HMML WebUI 前端服务已启动")
+        else:
+            logger.error("启动前端服务失败")
+            return False
+        
+        # 启动后端服务器
+        backend_command = f'"{node_path}" start.js'
+        backend_success = create_cmd_window(backend_dir, backend_command)
+        
+        if backend_success:
+            logger.info("HMML WebUI 后端服务已启动")
+        else:
+            logger.error("启动后端服务失败")
+            return False
+        
+        logger.info("HMML WebUI 已成功启动！")
+        return True
+        
+    except Exception as e:
+        logger.error(f"错误：启动 HMML WebUI 时出现异常：{str(e)}")
+        return False
+
 def launch_sqlite_studio():
     """启动数据库可视化管理工具"""
     # 首先检查是否存在 DB Browser for SQLite
@@ -1162,26 +1223,27 @@ class MenuManager:
             MenuItem("2", "单独启动 NapCat", handle_launch_napcat_only),
             MenuItem("3", "单独启动 Adapter", lambda: log_operation_result("启动 Adapter", launch_adapter())),
             MenuItem("4", "单独启动 麦麦主程序", lambda: log_operation_result("启动主程序", launch_main_bot())),
-            MenuItem("5", "添加/修改QQ号", add_qq_number),
-            MenuItem("6", "麦麦基础配置", lambda: log_operation_result("启动配置管理", launch_config_manager())),
-            MenuItem("7", "修改可发消息群聊&私聊", modify_allowed_chats),
-            MenuItem("8", "安装VC运行库", install_vc_redist),
-            MenuItem("9", "启动可视化数据库管理", lambda: log_operation_result("启动SQLiteStudio", launch_sqlite_studio())),
-            MenuItem("10", "交互式安装pip模块", lambda: log_operation_result("启动交互式pip模块安装", interactive_pip_install())),
+            MenuItem("5", "启动HMML WebUI", lambda: log_operation_result("启动 HMML WebUI", launch_hmml_webui())),
+            MenuItem("6", "添加/修改QQ号", add_qq_number),
+            MenuItem("7", "麦麦基础配置", lambda: log_operation_result("启动配置管理", launch_config_manager())),
+            MenuItem("8", "修改可发消息群聊&私聊", modify_allowed_chats),
+            MenuItem("9", "安装VC运行库", install_vc_redist),
+            MenuItem("10", "启动可视化数据库管理", lambda: log_operation_result("启动SQLiteStudio", launch_sqlite_studio())),
+            MenuItem("11", "交互式安装pip模块", lambda: log_operation_result("启动交互式pip模块安装", interactive_pip_install())),
         ])
         
         # 数据管理功能组
         data_group = MenuGroup("数据管理功能：", [
-            MenuItem("11", "麦麦删除所有记忆（删库）", lambda: log_operation_result("删除麦麦所有记忆", delete_maibot_memory())),
-            MenuItem("12", "从旧版(0.6.x)迁移数据库到0.8.x", lambda: log_operation_result("启动数据库迁移", migrate_database_from_old_version())),
-            MenuItem("13", "麦麦知识忘光光（删除知识库）", lambda: log_operation_result("删除麦麦知识库", delete_knowledge_base())),
-            MenuItem("14", "导入其他人的OpenIE文件", lambda: log_operation_result("启动OpenIE文件导入工具", import_openie_file())),
-            MenuItem("15", "麦麦开始学习", lambda: log_operation_result("启动麦麦学习流程", start_maibot_learning())),
+            MenuItem("12", "麦麦删除所有记忆（删库）", lambda: log_operation_result("删除麦麦所有记忆", delete_maibot_memory())),
+            MenuItem("13", "从旧版(0.6.x)迁移数据库到0.8.x", lambda: log_operation_result("启动数据库迁移", migrate_database_from_old_version())),
+            MenuItem("14", "麦麦知识忘光光（删除知识库）", lambda: log_operation_result("删除麦麦知识库", delete_knowledge_base())),
+            MenuItem("15", "导入其他人的OpenIE文件", lambda: log_operation_result("启动OpenIE文件导入工具", import_openie_file())),
+            MenuItem("16", "麦麦开始学习", lambda: log_operation_result("启动麦麦学习流程", start_maibot_learning())),
         ])
         
         # 其他功能组
         other_group = MenuGroup("其他功能：", [
-            MenuItem("16", "快捷打开配置文件", lambda: log_operation_result("打开配置文件", open_config_file())),
+            MenuItem("17", "快捷打开配置文件", lambda: log_operation_result("打开配置文件", open_config_file())),
         ])
         
         # 退出组
