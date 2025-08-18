@@ -1,0 +1,10 @@
+1. WebUI无法启动
+如果WebUI无法启动，可以先运行 "![[安装WebUI依赖.bat" 来进行快速修复
+如果无法修复，进入
+.\modules\HMMLDemon
+在这个路径下运行cmd，执行以下命令
+..\..\runtime\nodejs\pnpm.cmd install --registry https://registry.npmmirror.com
+
+
+2. 出现麦麦根目录没有设置/麦麦适配器根目录没有设置
+点击右上角设置 -> 重置设置/重新设置 打开启动设置面版
