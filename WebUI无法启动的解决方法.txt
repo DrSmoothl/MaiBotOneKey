@@ -1,0 +1,5 @@
+如果WebUI无法启动，可以先运行 "![[安装WebUI依赖.bat" 来进行快速修复
+如果无法修复，进入
+.\modules\HMMLDemon
+在这个路径下运行cmd，执行以下命令
+..\..\runtime\nodejs\pnpm.cmd install --registry https://registry.npmmirror.com
