@@ -8,3 +8,8 @@
 
 2. 出现麦麦根目录没有设置/麦麦适配器根目录没有设置
 点击右上角设置 -> 重置设置/重新设置 打开启动设置面版
+
+3. 一键包无法启动麦麦，提示”no module named XXX“
+修改启动命令
+麦麦主程序修改为：..\..\runtime\python31211\bin\python.exe bot.py
+麦麦适配器修改为：..\..\runtime\python31211\bin\python.exe main.py
