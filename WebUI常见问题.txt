@@ -13,3 +13,13 @@
 修改启动命令
 麦麦主程序修改为：..\..\runtime\python31211\bin\python.exe bot.py
 麦麦适配器修改为：..\..\runtime\python31211\bin\python.exe main.py
+
+
+如果你试过了所有的方法，还是装不上WebUI的依赖
+你可以进入runtime文件夹，找到一个 webui依赖.msi 的安装包，双击他安装nodejs运行环境
+然后打开一个cmd窗口，依次输入以下命令：
+
+npm config set registry https://registry.npmmirror.com
+npm install -g pnpm
+
+然后重新运行安装WebUI依赖.bat
