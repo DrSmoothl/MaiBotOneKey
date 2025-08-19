@@ -340,11 +340,11 @@ def main():
             'https://github.com/MaiM-with-u/MaiBot.git',
         ],
         'adapter': [
-            'https://gh.llkk.cc/https://github.com/MaiM-with-u/MaiBot-Napcat-Adapter.git',
-            'https://github.moeyy.xyz/https://github.com/MaiM-with-u/MaiBot-Napcat-Adapter.git',
-            'https://gitproxy.click/https://github.com/MaiM-with-u/MaiBot-Napcat-Adapter.git',
-            'https://gitproxy.net/https://github.com/MaiM-with-u/MaiBot-Napcat-Adapter.git',
-            'https://github.com/MaiM-with-u/MaiBot-Napcat-Adapter.git'
+            'https://gh.llkk.cc/https://github.com/UnCLAS-Prommer/MaiBot-Napcat-Adapter.git',
+            'https://github.moeyy.xyz/https://github.com/UnCLAS-Prommer/MaiBot-Napcat-Adapter.git',
+            'https://gitproxy.click/https://github.com/UnCLAS-Prommer/MaiBot-Napcat-Adapter.git',
+            'https://gitproxy.net/https://github.com/UnCLAS-Prommer/MaiBot-Napcat-Adapter.git',
+            'https://github.com/UnCLAS-Prommer/MaiBot-Napcat-Adapter.git'
         ]
     }
       # 定义要更新的仓库
