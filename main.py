@@ -325,6 +325,7 @@ def main() -> None:
             def _first_launch_hmml_webui():
                 import subprocess
                 from pathlib import Path
+                import time
                 base_dir = Path(__file__).parent
 
                 # 新版结构（允许 server.* 多种扩展 & 后端入口多名称）
@@ -363,12 +364,16 @@ def main() -> None:
                 ]
                 python_path = next((str(p) for p in py_candidates if p.exists()), None)
 
-                def _create_cmd_window(cwd: Path, command: str) -> bool:
+                def _create_cmd_window(cwd: Path, command: str, title: str) -> bool:
+                    """在新窗口中启动命令(使用 start)，附带标题。"""
                     try:
-                        subprocess.Popen(command, cwd=str(cwd), shell=True)
+                        # 统一使用 cmd /c start "窗口标题" 命令以确保新窗口
+                        wrapped = f'cmd /c start "{title}" {command}'
+                        subprocess.Popen(wrapped, cwd=str(cwd), shell=True)
+                        logger.info(f"已在新窗口启动: {title} -> {command}")
                         return True
                     except Exception as _e:
-                        logger.error(f"创建命令窗口失败: {command} 错误: {_e}")
+                        logger.error(f"创建命令窗口失败: {title} / {command} 错误: {_e}")
                         return False
 
                 # 优先新版
@@ -388,10 +393,13 @@ def main() -> None:
                         return False
                     front_cmd = f'start http://localhost:7998 && "{new_node}" "{server_file}"'
                     back_cmd = f'"{python_path}" "{new_backend_entry}"'
-                    ok1 = _create_cmd_window(new_frontend, front_cmd)
-                    ok2 = _create_cmd_window(new_backend, back_cmd) if ok1 else False
+                    ok1 = _create_cmd_window(new_frontend, front_cmd, 'HMML2-Frontend')
+                    # 稍等片刻让前端端口监听再启动后端，减少初始连接失败概率
+                    if ok1:
+                        time.sleep(1.2)
+                    ok2 = _create_cmd_window(new_backend, back_cmd, 'HMML2-Backend') if ok1 else False
                     if ok1 and ok2:
-                        logger.info("HMML2 WebUI 已启动 (前端+后端)")
+                        logger.info("HMML2 WebUI 已在独立窗口启动 (前端+后端)")
                         return True
                     logger.error("HMML2 WebUI 启动失败")
                     return False
@@ -402,10 +410,12 @@ def main() -> None:
                         return False
                     front_cmd = f'start http://localhost:7998 && "{old_node}" server.cjs'
                     back_cmd = f'"{old_node}" start.js'
-                    ok1 = _create_cmd_window(old_frontend, front_cmd)
-                    ok2 = _create_cmd_window(old_backend, back_cmd) if ok1 else False
+                    ok1 = _create_cmd_window(old_frontend, front_cmd, 'HMML-Old-Frontend')
+                    if ok1:
+                        time.sleep(1.0)
+                    ok2 = _create_cmd_window(old_backend, back_cmd, 'HMML-Old-Backend') if ok1 else False
                     if ok1 and ok2:
-                        logger.info("旧版 HMML WebUI 已启动")
+                        logger.info("旧版 HMML WebUI 已在独立窗口启动")
                         return True
                     logger.error("旧版 HMML WebUI 启动失败")
                     return False
