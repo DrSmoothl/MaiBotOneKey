@@ -131,17 +131,39 @@ def get_python_interpreter() -> Optional[Path]:
 def is_first_run() -> bool:
     """检查是否是首次运行"""
     try:
-        # 标记文件路径: 主程序目录/runtime/.initialized
-        marker = Path(__file__).parent / "runtime" / ".initialized"
-        if not marker.exists():
-            marker.parent.mkdir(parents=True, exist_ok=True)
-            marker.touch()
-            logger.info("检测到首次运行，已创建标记文件")
+        runtime_dir = Path(__file__).parent / "runtime"
+        new_marker = runtime_dir / ".initialized"
+        legacy_marker = runtime_dir / ".gitkeep"  # 兼容旧版本
+
+        # 如果任一标记存在 => 非首次
+        if new_marker.exists() or legacy_marker.exists():
+            logger.info("检测到非首次运行 (标记文件存在)")
+            return False
+
+        # 首次：尝试原子创建（避免并发重复）
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            # 使用排他创建模式
+            with open(new_marker, 'x', encoding='utf-8') as f:
+                f.write('initialized')
+            logger.info("首次运行：已原子创建初始化标记 .initialized")
             return True
-        logger.info("检测到非首次运行")
-        return False
+        except FileExistsError:
+            # 竞争条件下已被其他进程创建
+            logger.info("标记文件在创建过程中已出现，视为非首次")
+            return False
+        except Exception as e_inner:
+            logger.warning(f"创建初始化标记失败，尝试回退方案: {e_inner}")
+            try:
+                new_marker.touch(exist_ok=True)
+                logger.info("已通过回退方案创建初始化标记")
+                return True
+            except Exception as e_fallback:
+                logger.error(f"回退创建初始化标记仍失败: {e_fallback}")
+                # 仍返回 True 防止初始化被跳过
+                return True
     except Exception as e:
-        logger.error(f"检查首次运行状态时出错: {e}")
+        logger.error(f"检查首次运行状态时发生异常，默认为首次: {e}")
         return True
 
 def run_python_script(script_name: str) -> bool:
@@ -227,119 +249,9 @@ def safe_system_command(command: str, timeout: int = 30) -> bool:
         return False
 
 def setup_webui_dependencies() -> bool:
-    """设置WebUI的默认运行路径和安装依赖
-    
-    Returns:
-        bool: 安装是否成功
-    """
-    try:
-        # 获取路径
-        current_dir = Path(__file__).parent
-        nodejs_dir = current_dir / "runtime" / "nodejs"
-        pnpm_path = nodejs_dir / "pnpm.cmd"
-        hmml_demon_dir = current_dir / "modules" / "HMMLDemon"
-        
-        # 检查必要路径是否存在
-        if not nodejs_dir.exists():
-            logger.error(f"Node.js 路径不存在: {nodejs_dir}")
-            return False
-            
-        if not pnpm_path.exists():
-            logger.error(f"pnpm 可执行文件不存在: {pnpm_path}")
-            return False
-            
-        if not hmml_demon_dir.exists():
-            logger.error(f"HMMLDemon 模块路径不存在: {hmml_demon_dir}")
-            return False
-        
-        logger.info("开始设置 WebUI 依赖...")
-        print("======================")
-        print("正在设置 WebUI 依赖...")
-        print("======================")
-        
-        # 设置环境变量，将 Node.js 路径添加到 PATH
-        env = os.environ.copy()
-        env['PATH'] = str(nodejs_dir) + os.pathsep + env.get('PATH', '')
-        
-        # 定义可用的 npm 源
-        npm_registries = [
-            {"name": "淘宝源", "url": "https://registry.npmmirror.com"},
-            {"name": "腾讯源", "url": "https://mirrors.cloud.tencent.com/npm/"},
-            {"name": "华为源", "url": "https://repo.huaweicloud.com/repository/npm/"},
-            {"name": "官方源", "url": "https://registry.npmjs.org"}
-        ]
-        
-        # 最大重试次数
-        max_retries = len(npm_registries)
-        
-        for attempt in range(max_retries):
-            registry = npm_registries[attempt]
-            logger.info(f"尝试使用 {registry['name']}: {registry['url']} (第 {attempt + 1}/{max_retries} 次)")
-            print(f"尝试使用 {registry['name']}: {registry['url']} (第 {attempt + 1}/{max_retries} 次)")
-            
-            try:
-                # 设置 npm 源
-                set_registry_cmd = f'"{pnpm_path}" config set registry {registry["url"]}'
-                logger.info(f"设置 npm 源: {set_registry_cmd}")
-                
-                result = subprocess.run(
-                    set_registry_cmd,
-                    shell=True,
-                    timeout=30,
-                    capture_output=True,
-                    text=True,
-                    cwd=str(hmml_demon_dir),
-                    env=env
-                )
-                
-                if result.returncode != 0:
-                    logger.warning(f"设置 npm 源失败: {result.stderr}")
-                    continue
-                
-                logger.info(f"成功设置 npm 源为: {registry['name']}")
-                
-                # 执行 pnpm install
-                install_cmd = f'"{pnpm_path}" install'
-                logger.info(f"执行 pnpm install: {install_cmd}")
-                print(f"正在使用 {registry['name']} 安装依赖...")
-                
-                result = subprocess.run(
-                    install_cmd,
-                    shell=True,
-                    timeout=600,  # 10分钟超时
-                    capture_output=False,  # 保持输出到控制台
-                    text=True,
-                    cwd=str(hmml_demon_dir),
-                    env=env
-                )
-                
-                if result.returncode == 0:
-                    logger.info(f"使用 {registry['name']} 成功安装 WebUI 依赖")
-                    print(f"✓ 使用 {registry['name']} 成功安装 WebUI 依赖")
-                    return True
-                else:
-                    logger.warning(f"使用 {registry['name']} 安装依赖失败，返回码: {result.returncode}")
-                    print(f"✗ 使用 {registry['name']} 安装依赖失败，尝试下一个源...")
-                    
-            except subprocess.TimeoutExpired:
-                logger.error(f"使用 {registry['name']} 安装依赖超时")
-                print(f"✗ 使用 {registry['name']} 安装依赖超时，尝试下一个源...")
-                continue
-            except Exception as e:
-                logger.error(f"使用 {registry['name']} 安装依赖时出错: {e}")
-                print(f"✗ 使用 {registry['name']} 安装依赖时出错: {e}")
-                continue
-        
-        # 所有源都失败了
-        logger.error("所有 npm 源都尝试失败，WebUI 依赖安装失败")
-        print("✗ 所有 npm 源都尝试失败，WebUI 依赖安装失败")
-        print("请检查网络连接或手动安装依赖")
-        return False
-        
-    except Exception as e:
-        logger.error(f"设置 WebUI 依赖时出现未知错误: {e}")
-        print(f"✗ 设置 WebUI 依赖时出现未知错误: {e}")
-        return False
+    """(弃用) 保留占位以兼容旧代码调用，直接返回 True"""
+    logger.info("setup_webui_dependencies 已弃用，直接跳过。")
+    return True
 
 def check_dir_legal() -> bool:
     """检查当前目录是否包含中文等特殊字符
@@ -393,10 +305,7 @@ def main() -> None:
                 logger.error("模块更新失败")
                 return
             
-            # 设置 WebUI 依赖
-            if not setup_webui_dependencies():
-                logger.warning("WebUI 依赖安装失败，但程序将继续运行")
-                print("警告：WebUI 依赖安装失败，WebUI 功能可能不可用")
+            # (已移除) 旧版 WebUI 依赖安装步骤已废弃
             
             print("======================")
             print("正在执行NapCat初始化脚本...")
