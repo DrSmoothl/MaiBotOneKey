@@ -131,22 +131,17 @@ def get_python_interpreter() -> Optional[Path]:
 def is_first_run() -> bool:
     """检查是否是首次运行"""
     try:
-        # 标记文件路径: 主程序目录/runtime/.gitkeep
-        marker = Path(__file__).parent / "runtime" / ".gitkeep"
-        
+        # 标记文件路径: 主程序目录/runtime/.initialized
+        marker = Path(__file__).parent / "runtime" / ".initialized"
         if not marker.exists():
-            # 首次运行：创建runtime目录和标记文件
             marker.parent.mkdir(parents=True, exist_ok=True)
-            marker.touch()  # 创建空文件
+            marker.touch()
             logger.info("检测到首次运行，已创建标记文件")
             return True
-        
         logger.info("检测到非首次运行")
         return False
-        
     except Exception as e:
         logger.error(f"检查首次运行状态时出错: {e}")
-        # 出错时默认为首次运行，确保初始化能正常进行
         return True
 
 def run_python_script(script_name: str) -> bool:
@@ -494,8 +489,18 @@ def main() -> None:
             safe_system_command("timeout /t 3 /nobreak > nul")
             safe_system_command("cls")
             
-            if not run_python_script("main.py"):
-                logger.error("MaiBot启动失败")
+            # 写入初始化完成标记（冪等，重复写入无影响）
+            try:
+                init_flag = Path(__file__).parent / 'runtime' / '.initialized'
+                init_flag.parent.mkdir(parents=True, exist_ok=True)
+                init_flag.write_text('initialized', encoding='utf-8')
+                logger.info("初始化完成标记已写入")
+            except Exception as e:
+                logger.warning(f"写入初始化完成标记失败: {e}")
+
+            # 首次初始化后直接进入 start.py（主菜单/主逻辑）
+            if not run_python_script("start.py"):
+                logger.error("首次运行后启动主程序失败")
                 return
         else:
             # 非首次运行
