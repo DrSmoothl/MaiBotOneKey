@@ -410,14 +410,85 @@ def main() -> None:
             if not run_python_script("init_napcat.py"):
                 logger.error("NapCat初始化失败")
                 return
-                
-            print("======================")
-            print("正在执行MaiBot初始化脚本...")
-            print("======================")
             
-            if not run_python_script("config_manager.py"):
-                logger.error("MaiBot配置失败")
-                return
+            # 直接启动 HMML WebUI 让用户进行交互配置
+            print("======================")
+            print("首次运行：即将启动 HMML WebUI 进行配置，请在浏览器中完成操作。")
+            print("如未自动打开，可手动访问: http://localhost:7998")
+            print("======================")
+
+            # 内联一个最小化的 HMML WebUI 启动逻辑（避免循环导入）
+            def _first_launch_hmml_webui():
+                import subprocess
+                from pathlib import Path
+                base_dir = Path(__file__).parent
+
+                # 新版结构
+                new_frontend = base_dir / 'modules' / 'HMML2Panel'
+                new_backend = base_dir / 'modules' / 'HMML2Backend'
+                new_node = new_frontend / 'node.exe'
+                new_server = new_frontend / 'server.cjs'
+                new_backend_entry = new_backend / 'start.py'
+
+                # 旧版结构
+                old_frontend = base_dir / 'modules' / 'HMMLPanel'
+                old_backend = base_dir / 'modules' / 'HMMLDemon'
+                old_node = base_dir / 'runtime' / 'nodejs' / 'node.exe'
+                old_server = old_frontend / 'server.cjs'
+                old_backend_js = old_backend / 'start.js'
+
+                # Python 解释器候选
+                py_candidates = [
+                    base_dir / 'runtime' / 'python31211' / 'python.exe',
+                    base_dir / 'runtime' / 'python31211' / 'bin' / 'python.exe'
+                ]
+                python_path = next((str(p) for p in py_candidates if p.exists()), None)
+
+                def _create_cmd_window(cwd: Path, command: str) -> bool:
+                    try:
+                        subprocess.Popen(command, cwd=str(cwd), shell=True)
+                        return True
+                    except Exception as _e:
+                        logger.error(f"创建命令窗口失败: {command} 错误: {_e}")
+                        return False
+
+                # 优先新版
+                if new_frontend.is_dir() and new_backend.is_dir():
+                    if not new_node.exists() or not new_server.exists() or not new_backend_entry.exists():
+                        logger.error("HMML2 目录存在但缺少必要文件 (node.exe/server.cjs/start.py)")
+                        return False
+                    if not python_path:
+                        logger.error("未找到 Python 解释器，无法启动 HMML2 后端")
+                        return False
+                    front_cmd = f'start http://localhost:7998 && "{new_node}" "{new_server}"'
+                    back_cmd = f'"{python_path}" "{new_backend_entry}"'
+                    ok1 = _create_cmd_window(new_frontend, front_cmd)
+                    ok2 = _create_cmd_window(new_backend, back_cmd) if ok1 else False
+                    if ok1 and ok2:
+                        logger.info("HMML2 WebUI 已启动 (前端+后端)")
+                        return True
+                    logger.error("HMML2 WebUI 启动失败")
+                    return False
+                # 回退旧版
+                if old_frontend.is_dir() and old_backend.is_dir():
+                    if not old_node.exists() or not old_server.exists() or not old_backend_js.exists():
+                        logger.error("旧版 HMML 目录缺少必要文件 (node.exe/server.cjs/start.js)")
+                        return False
+                    front_cmd = f'start http://localhost:7998 && "{old_node}" server.cjs'
+                    back_cmd = f'"{old_node}" start.js'
+                    ok1 = _create_cmd_window(old_frontend, front_cmd)
+                    ok2 = _create_cmd_window(old_backend, back_cmd) if ok1 else False
+                    if ok1 and ok2:
+                        logger.info("旧版 HMML WebUI 已启动")
+                        return True
+                    logger.error("旧版 HMML WebUI 启动失败")
+                    return False
+                logger.error("未找到任何可用的 HMML WebUI 结构 (HMML2 或 旧版)")
+                return False
+
+            if not _first_launch_hmml_webui():
+                print("启动 HMML WebUI 失败，可稍后从菜单手动启动。")
+                logger.error("首次运行时启动 HMML WebUI 失败")
                 
             print("3秒后启动MaiBot Client...")
             safe_system_command("timeout /t 3 /nobreak > nul")

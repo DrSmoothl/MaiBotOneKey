@@ -14,7 +14,7 @@ except ImportError:
 import requests
 
 
-ONEKEY_VERSION = "4.2.1" 
+ONEKEY_VERSION = "5.0.0-Beta" 
 
 def get_absolute_path(relative_path: str) -> str:
     """获取绝对路径
@@ -726,21 +726,109 @@ def launch_napcat(qq_number: Optional[str] = None, headed_mode: bool = False) ->
     if not qq_number:
         return False
 
+    # 动态获取 webui token
+    def _load_napcat_token() -> Optional[str]:
+        import json
+        import secrets
+        base_new_headed = get_absolute_path('modules/napcatframework/versions')
+        base_new_headless = get_absolute_path('modules/napcat/versions')
+        candidates = []
+        # 收集所有 versions/* 目录下的 webui.json 两种可能路径
+        for base in [base_new_headless, base_new_headed]:
+            if not os.path.isdir(base):
+                continue
+            try:
+                for ver in os.listdir(base):
+                    ver_dir = os.path.join(base, ver)
+                    if not os.path.isdir(ver_dir):
+                        continue
+                    # 两种实际文件路径
+                    path1 = os.path.join(ver_dir, 'resources', 'app', 'napcat', 'config', 'webui.json')
+                    path2 = os.path.join(ver_dir, 'resources', 'app', 'LiteLoader', 'plugins', 'NapCat', 'config', 'webui.json')
+                    candidates.extend([path1, path2])
+            except Exception as _e:
+                logger.debug(f"遍历 {base} 出错: {_e}")
+
+        # 过滤存在的文件并按修改时间排序
+        existing = [p for p in candidates if os.path.exists(p)]
+        existing.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        for file in existing:
+            try:
+                with open(file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                token = data.get('token')
+                if token:
+                    logger.info(f"已从 {file} 读取 NapCat WebUI token")
+                    return str(token)
+            except Exception as _e:
+                logger.warning(f"读取 token 失败 {file}: {_e}")
+
+        # 没有任何 webui.json：尝试为最新版本目录创建一个
+        version_roots = [b for b in [base_new_headless, base_new_headed] if os.path.isdir(b)]
+        chosen_version_dir = None
+        latest_mtime = -1
+        for root in version_roots:
+            try:
+                for ver in os.listdir(root):
+                    ver_dir = os.path.join(root, ver)
+                    if os.path.isdir(ver_dir):
+                        mtime = os.path.getmtime(ver_dir)
+                        if mtime > latest_mtime:
+                            latest_mtime = mtime
+                            chosen_version_dir = ver_dir
+            except Exception as _e:
+                logger.debug(f"扫描版本目录 {root} 出错: {_e}")
+
+        if chosen_version_dir:
+            # 优先 napcat/config 路径，其次 LiteLoader 路径
+            create_paths = [
+                os.path.join(chosen_version_dir, 'resources', 'app', 'napcat', 'config'),
+                os.path.join(chosen_version_dir, 'resources', 'app', 'LiteLoader', 'plugins', 'NapCat', 'config')
+            ]
+            # 生成 12 位 hex token
+            token = secrets.token_hex(6)
+            default_json = {
+                "host": "0.0.0.0",
+                "port": 6099,
+                "token": token,
+                "loginRate": 10,
+                "autoLoginAccount": "",
+                "theme": {"dark": {}, "light": {}},  # 为减小体积，这里不写全部主题，NapCat 启动后会补全或忽略
+                "disableWebUI": False,
+                "disableNonLANAccess": False
+            }
+            for cfg_dir in create_paths:
+                try:
+                    os.makedirs(cfg_dir, exist_ok=True)
+                    target_file = os.path.join(cfg_dir, 'webui.json')
+                    if not os.path.exists(target_file):
+                        with open(target_file, 'w', encoding='utf-8') as f:
+                            json.dump(default_json, f, ensure_ascii=False, indent=4)
+                        logger.info(f"已创建缺失的 NapCat webui.json 并生成 token({token[:4]}***): {target_file}")
+                        return token
+                except Exception as _e:
+                    logger.warning(f"创建默认 webui.json 失败 {cfg_dir}: {_e}")
+
+        logger.warning("未找到或创建 NapCat webui.json，将回退使用占位 token 'napcat'")
+        return 'napcat'
+
+    webui_token = _load_napcat_token()
+
     if headed_mode:
         napcat_dir = get_absolute_path('modules/napcatframework')
         napcat_exe_path = os.path.join(napcat_dir, 'NapCatWinBootMain.exe')
         if not os.path.exists(napcat_exe_path):
             logger.error(f"错误：找不到有头模式 NapCat 可执行文件 {napcat_exe_path}")
             return False
-        cwd = napcat_dir        
-        command = f'CHCP 65001 & start http://127.0.0.1:6099/webui/web_login?token=napcat & NapCatWinBootMain.exe {qq_number}'
-        logger.info(f"尝试以有头模式启动 NapCat (QQ: {qq_number})")
+        cwd = napcat_dir
+        command = f'CHCP 65001 & start http://127.0.0.1:6099/webui/web_login?token={webui_token} & NapCatWinBootMain.exe {qq_number}'
+        logger.info(f"尝试以有头模式启动 NapCat (QQ: {qq_number}, token:{webui_token})")
     else:
         if not check_napcat():
             return False
         cwd = get_absolute_path('modules/napcat')
-        command = f'CHCP 65001 & start http://127.0.0.1:6099/webui/web_login?token=napcat & NapCatWinBootMain.exe {qq_number}'
-        logger.info(f"尝试以无头模式启动 NapCat (QQ: {qq_number})")
+        command = f'CHCP 65001 & start http://127.0.0.1:6099/webui/web_login?token={webui_token} & NapCatWinBootMain.exe {qq_number}'
+        logger.info(f"尝试以无头模式启动 NapCat (QQ: {qq_number}, token:{webui_token})")
 
     return create_cmd_window(cwd, command)
 
@@ -841,64 +929,103 @@ def launch_python_cmd():
     return create_cmd_window(script_dir, "echo Python environment ready. You can now run Python scripts. Type 'exit' to close.")
 
 def launch_hmml_webui():
-    """启动HMML WebUI"""
-    # 获取 Node.js 路径
-    node_path = get_absolute_path('runtime/nodejs/node.exe')
-    
-    # 前端和后端目录
-    frontend_dir = get_absolute_path('modules/HMMLPanel')
-    backend_dir = get_absolute_path('modules/HMMLDemon')
-    
-    # 检查必要文件是否存在
-    if not os.path.exists(node_path):
-        logger.error(f"错误：找不到 Node.js 可执行文件 {node_path}")
-        return False
-    
-    if not validate_directory_exists(frontend_dir):
-        logger.error(f"错误：找不到前端目录 {frontend_dir}")
-        return False
-    
-    if not validate_directory_exists(backend_dir):
-        logger.error(f"错误：找不到后端目录 {backend_dir}")
-        return False
-    
-    frontend_server_file = os.path.join(frontend_dir, 'server.cjs')
-    backend_start_file = os.path.join(backend_dir, 'start.js')
-    
-    if not os.path.exists(frontend_server_file):
-        logger.error(f"错误：找不到前端服务文件 {frontend_server_file}")
-        return False
-    
-    if not os.path.exists(backend_start_file):
-        logger.error(f"错误：找不到后端启动文件 {backend_start_file}")
-        return False
-    
+    """启动 HMML WebUI (新版目录结构 HMML2Panel + HMML2Backend)
+    前端：进入 HMML2Panel 目录，使用其中自带 node.exe 执行 server.cjs
+    后端：进入 HMML2Backend 目录，使用 runtime/python31211/python.exe 执行 start.py
+    兼容：若新目录不存在，则回退到旧目录( HMMLPanel / HMMLDemon )逻辑。
+    """
     try:
-        # 启动前端服务器
-        frontend_command = f'start http://localhost:7998 && "{node_path}" server.cjs'
-        frontend_success = create_cmd_window(frontend_dir, frontend_command)
-        
-        if frontend_success:
-            logger.info("HMML WebUI 前端服务已启动")
+        # 新结构路径
+        new_frontend_dir = get_absolute_path('modules/HMML2Panel')
+        new_backend_dir = get_absolute_path('modules/HMML2Backend')
+        new_node_path = os.path.join(new_frontend_dir, 'node.exe')
+        new_frontend_entry = os.path.join(new_frontend_dir, 'server.cjs')
+        new_backend_entry = os.path.join(new_backend_dir, 'start.py')
+
+        # 旧结构回退路径
+        old_frontend_dir = get_absolute_path('modules/HMMLPanel')
+        old_backend_dir = get_absolute_path('modules/HMMLDemon')
+        old_node_path = get_absolute_path('runtime/nodejs/node.exe')
+        old_frontend_entry = os.path.join(old_frontend_dir, 'server.cjs')
+        old_backend_entry_js = os.path.join(old_backend_dir, 'start.js')
+
+        use_new = os.path.isdir(new_frontend_dir) and os.path.isdir(new_backend_dir)
+        if use_new:
+            logger.info("检测到 HMML2 新版目录结构，将使用 HMML2Panel / HMML2Backend 启动方式。")
+            # 校验文件
+            if not os.path.exists(new_node_path):
+                logger.error(f"错误：新版前端未找到 node.exe: {new_node_path}")
+                return False
+            if not os.path.exists(new_frontend_entry):
+                logger.error(f"错误：新版前端缺少 server.cjs: {new_frontend_entry}")
+                return False
+            if not os.path.exists(new_backend_entry):
+                logger.error(f"错误：新版后端缺少 start.py: {new_backend_entry}")
+                return False
+
+            # Python 解释器路径（不再放 bin 子目录，兼容存在 bin 的情况）
+            py_candidates = [
+                get_absolute_path('runtime/python31211/python.exe'),
+                get_absolute_path('runtime/python31211/bin/python.exe')
+            ]
+            python_path = next((p for p in py_candidates if os.path.exists(p)), None)
+            if not python_path:
+                logger.error("错误：未找到 Python 解释器 runtime/python31211/python.exe")
+                return False
+
+            # 启动前端：打开浏览器 + node.exe server.cjs
+            frontend_cmd = f'start http://localhost:7998 && "{new_node_path}" "{new_frontend_entry}"'
+            frontend_ok = create_cmd_window(new_frontend_dir, frontend_cmd)
+            if not frontend_ok:
+                logger.error("启动新版前端失败")
+                return False
+            logger.info("HMML2 前端已启动 (端口:7998) ...")
+
+            # 启动后端：python start.py
+            backend_cmd = f'"{python_path}" "{new_backend_entry}"'
+            backend_ok = create_cmd_window(new_backend_dir, backend_cmd)
+            if not backend_ok:
+                logger.error("启动新版后端失败")
+                return False
+            logger.info("HMML2 后端已启动。")
+
+            logger.info("HMML WebUI (HMML2) 启动完成。")
+            return True
         else:
-            logger.error("启动前端服务失败")
-            return False
-        
-        # 启动后端服务器
-        backend_command = f'"{node_path}" start.js'
-        backend_success = create_cmd_window(backend_dir, backend_command)
-        
-        if backend_success:
-            logger.info("HMML WebUI 后端服务已启动")
-        else:
-            logger.error("启动后端服务失败")
-            return False
-        
-        logger.info("HMML WebUI 已成功启动！")
-        return True
-        
+            logger.info("未检测到 HMML2 新版目录结构，回退到旧版 HMMLPanel/HMMLDemon 启动方式。")
+            # 校验旧结构
+            if not (os.path.isdir(old_frontend_dir) and os.path.isdir(old_backend_dir)):
+                logger.error("错误：既没有新版目录，也没有找到旧版 HMMLPanel/HMMLDemon 目录。")
+                return False
+            if not os.path.exists(old_node_path):
+                logger.error(f"错误：旧版 Node.js 不存在: {old_node_path}")
+                return False
+            if not os.path.exists(old_frontend_entry):
+                logger.error(f"错误：旧版缺少前端 server.cjs: {old_frontend_entry}")
+                return False
+            if not os.path.exists(old_backend_entry_js):
+                logger.error(f"错误：旧版缺少后端 start.js: {old_backend_entry_js}")
+                return False
+
+            # 启动旧版前端
+            old_frontend_cmd = f'start http://localhost:7998 && "{old_node_path}" server.cjs'
+            old_frontend_ok = create_cmd_window(old_frontend_dir, old_frontend_cmd)
+            if not old_frontend_ok:
+                logger.error("启动旧版前端失败")
+                return False
+            logger.info("HMML WebUI 旧版前端已启动")
+
+            # 启动旧版后端 (node start.js)
+            old_backend_cmd = f'"{old_node_path}" start.js'
+            old_backend_ok = create_cmd_window(old_backend_dir, old_backend_cmd)
+            if not old_backend_ok:
+                logger.error("启动旧版后端失败")
+                return False
+            logger.info("HMML WebUI 旧版后端已启动")
+            logger.info("HMML WebUI (旧版) 启动完成。")
+            return True
     except Exception as e:
-        logger.error(f"错误：启动 HMML WebUI 时出现异常：{str(e)}")
+        logger.error(f"错误：启动 HMML WebUI 过程出现异常：{e}")
         return False
 
 def launch_sqlite_studio():

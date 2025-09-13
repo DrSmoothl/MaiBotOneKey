@@ -47,7 +47,7 @@ def create_napcat_config(qq_number):
     
     if not available_versions:
         print("警告：未找到任何QQ版本，使用默认版本")
-        available_versions = ["9.9.19-34740"]
+        available_versions = ["9.9.21-39038"]
     
     print(f"找到 {len(available_versions)} 个QQ版本：{', '.join(available_versions)}")
     
@@ -104,7 +104,7 @@ def create_onebot_config(qq_number):
     
     if not available_versions:
         print("警告：未找到任何QQ版本，使用默认版本")
-        available_versions = ["9.9.19-34740"]
+        available_versions = ["9.9.21-39038"]
     
     print(f"为 {len(available_versions)} 个版本创建OneBot11配置")
     
