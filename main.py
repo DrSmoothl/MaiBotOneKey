@@ -45,9 +45,9 @@ def check_and_create_config_files() -> bool:
             'is_directory': False
         },
         {
-            'name': 'MaiBot-LPMM配置文件',
-            'path': get_absolute_path('modules/MaiBot/config/lpmm_config.toml'),
-            'template': get_absolute_path('modules/MaiBot/template/lpmm_config_template.toml'),
+            'name': 'MaiBot-模型配置文件',
+            'path': get_absolute_path('modules/MaiBot/config/model_config.toml'),
+            'template': get_absolute_path('modules/MaiBot/template/model_config_template.toml'),
             'is_directory': False
         },
         {
