@@ -54,13 +54,13 @@ if not exist "%PYTHON_PATH%" (
 echo 使用项目自带的 Python: %PYTHON_PATH%
 
 :start
-REM 检查 runtime/.gitkeep 文件是否存在.
-set "GITKEEP_PATH=%~dp0runtime\.gitkeep"
-if not exist "%GITKEEP_PATH%" (
-    echo 检测到 runtime/.gitkeep 不存在，正在执行模块更新...
+REM 检查 runtime/.initialized 文件是否存在.
+set "INITIALIZED_PATH=%~dp0runtime\.initialized"
+if not exist "%INITIALIZED_PATH%" (
+    echo 检测到 runtime/.initialized 不存在，正在执行模块更新...
     "%PYTHON_PATH%" update_modules.py
 ) else (
-    echo runtime/.gitkeep 存在，跳过模块更新.
+    echo runtime/.initialized 存在，跳过模块更新.
 )
 
 "%PYTHON_PATH%" main.py
