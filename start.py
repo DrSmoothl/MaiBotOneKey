@@ -935,12 +935,26 @@ def launch_hmml_webui():
     兼容：若新目录不存在，则回退到旧目录( HMMLPanel / HMMLDemon )逻辑。
     """
     try:
-        # 新结构路径
+        # 新结构路径与候选文件
         new_frontend_dir = get_absolute_path('modules/HMML2Panel')
         new_backend_dir = get_absolute_path('modules/HMML2Backend')
-        new_node_path = os.path.join(new_frontend_dir, 'node.exe')
-        new_frontend_entry = os.path.join(new_frontend_dir, 'server.cjs')
-        new_backend_entry = os.path.join(new_backend_dir, 'start.py')
+        possible_server_files = [
+            os.path.join(new_frontend_dir, 'server.cjs'),
+            os.path.join(new_frontend_dir, 'server.js'),
+            os.path.join(new_frontend_dir, 'server.mjs'),
+        ]
+        new_frontend_entry = next((p for p in possible_server_files if os.path.exists(p)), None)
+        node_candidates = [
+            os.path.join(new_frontend_dir, 'node.exe'),
+            get_absolute_path('runtime/nodejs/node.exe')
+        ]
+        new_node_path = next((p for p in node_candidates if os.path.exists(p)), None)
+        backend_entry_candidates = [
+            os.path.join(new_backend_dir, 'start.py'),
+            os.path.join(new_backend_dir, 'main.py'),
+            os.path.join(new_backend_dir, 'app.py')
+        ]
+        new_backend_entry = next((p for p in backend_entry_candidates if os.path.exists(p)), None)
 
         # 旧结构回退路径
         old_frontend_dir = get_absolute_path('modules/HMMLPanel')
@@ -951,16 +965,15 @@ def launch_hmml_webui():
 
         use_new = os.path.isdir(new_frontend_dir) and os.path.isdir(new_backend_dir)
         if use_new:
-            logger.info("检测到 HMML2 新版目录结构，将使用 HMML2Panel / HMML2Backend 启动方式。")
-            # 校验文件
-            if not os.path.exists(new_node_path):
-                logger.error(f"错误：新版前端未找到 node.exe: {new_node_path}")
-                return False
-            if not os.path.exists(new_frontend_entry):
-                logger.error(f"错误：新版前端缺少 server.cjs: {new_frontend_entry}")
-                return False
-            if not os.path.exists(new_backend_entry):
-                logger.error(f"错误：新版后端缺少 start.py: {new_backend_entry}")
+            missing = []
+            if not new_node_path:
+                missing.append('node.exe')
+            if not new_frontend_entry:
+                missing.append('server.(cjs|js|mjs)')
+            if not new_backend_entry:
+                missing.append('后端入口(start.py|main.py|app.py)')
+            if missing:
+                logger.error(f"HMML2 目录存在但缺少必要文件: {', '.join(missing)}")
                 return False
 
             # Python 解释器路径（不再放 bin 子目录，兼容存在 bin 的情况）

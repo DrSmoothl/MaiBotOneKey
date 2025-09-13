@@ -327,12 +327,27 @@ def main() -> None:
                 from pathlib import Path
                 base_dir = Path(__file__).parent
 
-                # 新版结构
+                # 新版结构（允许 server.* 多种扩展 & 后端入口多名称）
                 new_frontend = base_dir / 'modules' / 'HMML2Panel'
                 new_backend = base_dir / 'modules' / 'HMML2Backend'
-                new_node = new_frontend / 'node.exe'
-                new_server = new_frontend / 'server.cjs'
-                new_backend_entry = new_backend / 'start.py'
+                possible_server_files = [
+                    new_frontend / 'server.cjs',
+                    new_frontend / 'server.js',
+                    new_frontend / 'server.mjs',
+                ]
+                server_file = next((p for p in possible_server_files if p.exists()), None)
+                # node.exe：优先前端目录下，其次 runtime/nodejs/node.exe
+                node_candidates = [
+                    new_frontend / 'node.exe',
+                    base_dir / 'runtime' / 'nodejs' / 'node.exe'
+                ]
+                new_node = next((p for p in node_candidates if p.exists()), None)
+                backend_entry_candidates = [
+                    new_backend / 'start.py',
+                    new_backend / 'main.py',
+                    new_backend / 'app.py'
+                ]
+                new_backend_entry = next((p for p in backend_entry_candidates if p.exists()), None)
 
                 # 旧版结构
                 old_frontend = base_dir / 'modules' / 'HMMLPanel'
@@ -358,13 +373,20 @@ def main() -> None:
 
                 # 优先新版
                 if new_frontend.is_dir() and new_backend.is_dir():
-                    if not new_node.exists() or not new_server.exists() or not new_backend_entry.exists():
-                        logger.error("HMML2 目录存在但缺少必要文件 (node.exe/server.cjs/start.py)")
+                    missing = []
+                    if not new_node:
+                        missing.append('node.exe')
+                    if not server_file:
+                        missing.append('server.(cjs|js|mjs)')
+                    if not new_backend_entry:
+                        missing.append('后端入口 (start.py|main.py|app.py)')
+                    if missing:
+                        logger.error(f"HMML2 目录存在但缺少必要文件: {', '.join(missing)}")
                         return False
                     if not python_path:
                         logger.error("未找到 Python 解释器，无法启动 HMML2 后端")
                         return False
-                    front_cmd = f'start http://localhost:7998 && "{new_node}" "{new_server}"'
+                    front_cmd = f'start http://localhost:7998 && "{new_node}" "{server_file}"'
                     back_cmd = f'"{python_path}" "{new_backend_entry}"'
                     ok1 = _create_cmd_window(new_frontend, front_cmd)
                     ok2 = _create_cmd_window(new_backend, back_cmd) if ok1 else False
