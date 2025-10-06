@@ -59,7 +59,7 @@ def check_and_create_config_files() -> bool:
         {
             'name': 'NapCat适配器配置文件',
             'path': get_absolute_path('modules/MaiBot-Napcat-Adapter/config.toml'),
-            'template': get_absolute_path('modules/MaiBot-Napcat-Adapter/template.toml'),
+            'template': get_absolute_path('modules/MaiBot-Napcat-Adapter/template/template_config.toml'),
             'is_directory': False
         }
     ]
@@ -129,42 +129,30 @@ def get_python_interpreter() -> Optional[Path]:
         return None
 
 def is_first_run() -> bool:
-    """检查是否是首次运行"""
+    """检查是否是首次运行
+    
+    通过检查 runtime/.initialized 或 runtime/.gitkeep 文件是否存在来判断
+    如果文件不存在则为首次运行,创建标记文件并返回 True
+    """
+    runtime_dir = Path(__file__).parent / "runtime"
+    new_marker = runtime_dir / ".initialized"
+    legacy_marker = runtime_dir / ".gitkeep"  # 兼容旧版本
+    
+    # 如果任一标记文件存在，则不是首次运行
+    if new_marker.exists() or legacy_marker.exists():
+        logger.info("检测到非首次运行 (标记文件存在)")
+        return False
+    
+    # 首次运行:创建标记文件
+    logger.info("首次运行检测: 未找到初始化标记文件,正在创建...")
     try:
-        runtime_dir = Path(__file__).parent / "runtime"
-        new_marker = runtime_dir / ".initialized"
-        legacy_marker = runtime_dir / ".gitkeep"  # 兼容旧版本
-
-        # 如果任一标记存在 => 非首次
-        if new_marker.exists() or legacy_marker.exists():
-            logger.info("检测到非首次运行 (标记文件存在)")
-            return False
-
-        # 首次：尝试原子创建（避免并发重复）
         runtime_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            # 使用排他创建模式
-            with open(new_marker, 'x', encoding='utf-8') as f:
-                f.write('initialized')
-            logger.info("首次运行：已原子创建初始化标记 .initialized")
-            return True
-        except FileExistsError:
-            # 竞争条件下已被其他进程创建
-            logger.info("标记文件在创建过程中已出现，视为非首次")
-            return False
-        except Exception as e_inner:
-            logger.warning(f"创建初始化标记失败，尝试回退方案: {e_inner}")
-            try:
-                new_marker.touch(exist_ok=True)
-                logger.info("已通过回退方案创建初始化标记")
-                return True
-            except Exception as e_fallback:
-                logger.error(f"回退创建初始化标记仍失败: {e_fallback}")
-                # 仍返回 True 防止初始化被跳过
-                return True
+        new_marker.write_text('initialized', encoding='utf-8')
+        logger.info("已创建初始化标记文件: .initialized")
     except Exception as e:
-        logger.error(f"检查首次运行状态时发生异常，默认为首次: {e}")
-        return True
+        logger.warning(f"创建初始化标记文件失败: {e}")
+    
+    return True
 
 def run_python_script(script_name: str) -> bool:
     """运行同一目录下的Python脚本"""
