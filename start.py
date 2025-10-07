@@ -14,7 +14,7 @@ except ImportError:
 import requests
 
 
-ONEKEY_VERSION = "5.0.0-Beta" 
+ONEKEY_VERSION = "5.0.0" 
 
 def get_absolute_path(relative_path: str) -> str:
     """获取绝对路径
