@@ -838,7 +838,8 @@ def launch_adapter():
 
 def launch_main_bot():
     main_path = get_absolute_path('modules/MaiBot')
-    return create_cmd_window(main_path, 'python bot.py')
+    command = 'CHCP 65001 & start http://localhost:8001 & python bot.py'
+    return create_cmd_window(main_path, command)
 
 def update_qq_in_config(config_path: str, qq_number: str):
     try:
@@ -1131,7 +1132,7 @@ def get_napcat_launch_mode() -> bool:
     """
     print("=== 选择 NapCat 启动模式 ===")
     print(" 1: 无头模式 (默认) : 只有命令行窗口，没有图形界面")
-    print(" 2: 有头模式 : 带QQ电脑版图形界面")
+    print(" 2: 有头模式 : 带QQ电脑版图形界面（不推荐）")
     napcat_launch_choice = input("选择 NapCat 启动模式: ").strip()
     
     if napcat_launch_choice == '2':
