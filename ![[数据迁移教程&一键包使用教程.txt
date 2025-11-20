@@ -12,8 +12,6 @@
 LPMM知识库导入向导：
 https://docs.mai-mai.org/manual/deployment/LPMM.html#%E9%BA%A6%E9%BA%A6%E5%AD%A6%E4%B9%A0%E7%9F%A5%E8%AF%86
 
-0.6升级到0.7说明：https://docs.mai-mai.org/faq/maibot/update_to_07.html
-
 麦麦配置帮助，包括如何启用禁言，配置风格：https://docs.mai-mai.org/faq/maibot/settings.html
 
 配置文件详解：https://docs.mai-mai.org/manual/configuration/
@@ -33,6 +31,6 @@ https://docs.mai-mai.org/manual/deployment/LPMM.html#%E9%BA%A6%E9%BA%A6%E5%AD%A6
 
 需要迁移的配置文件：
 bot_config.toml
-lpmm_config.toml
+model_config.toml
 .env
 
