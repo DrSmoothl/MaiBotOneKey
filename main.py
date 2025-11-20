@@ -134,7 +134,7 @@ def is_first_run() -> bool:
     通过检查 runtime/.initialized 或 runtime/.gitkeep 文件是否存在来判断
     如果文件不存在则为首次运行,创建标记文件并返回 True
     """
-    runtime_dir = Path(__file__) / "runtime"
+    runtime_dir = Path(__file__).parent / "runtime"
     new_marker = runtime_dir / ".initialized"
     legacy_marker = runtime_dir / ".gitkeep"  # 兼容旧版本
     
