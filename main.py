@@ -132,7 +132,6 @@ def is_first_run() -> bool:
     """检查是否是首次运行
     
     通过检查 runtime/.initialized 或 runtime/.gitkeep 文件是否存在来判断
-    如果文件不存在则为首次运行,创建标记文件并返回 True
     """
     runtime_dir = Path(__file__).parent / "runtime"
     new_marker = runtime_dir / ".initialized"
@@ -143,15 +142,7 @@ def is_first_run() -> bool:
         logger.info("检测到非首次运行 (标记文件存在)")
         return False
     
-    # 首次运行:创建标记文件
-    logger.info("首次运行检测: 未找到初始化标记文件,正在创建...")
-    try:
-        runtime_dir.mkdir(parents=True, exist_ok=True)
-        new_marker.write_text('initialized', encoding='utf-8')
-        logger.info("已创建初始化标记文件: .initialized")
-    except Exception as e:
-        logger.warning(f"创建初始化标记文件失败: {e}")
-    
+    logger.info("首次运行检测: 未找到初始化标记文件")
     return True
 
 def run_python_script(script_name: str) -> bool:
@@ -310,6 +301,16 @@ def main() -> None:
             if not run_python_script("config_qq_adapter.py"):
                 logger.error("QQ适配器配置失败")
                 return
+            
+            # 所有初始化步骤完成,创建标记文件
+            try:
+                runtime_dir = Path(__file__).parent / "runtime"
+                init_marker = runtime_dir / ".initialized"
+                runtime_dir.mkdir(parents=True, exist_ok=True)
+                init_marker.write_text('initialized', encoding='utf-8')
+                logger.info("初始化完成,已创建标记文件: .initialized")
+            except Exception as e:
+                logger.warning(f"创建初始化标记文件失败: {e}")
             
             print("3秒后启动MaiBot Client...")
             safe_system_command("timeout /t 3 /nobreak > nul")
