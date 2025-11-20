@@ -838,7 +838,7 @@ def launch_adapter():
 
 def launch_main_bot():
     main_path = get_absolute_path('modules/MaiBot')
-    command = 'CHCP 65001 & start http://localhost:8001 & python bot.py'
+    command = 'start http://localhost:8001 & python bot.py'
     return create_cmd_window(main_path, command)
 
 def update_qq_in_config(config_path: str, qq_number: str):
