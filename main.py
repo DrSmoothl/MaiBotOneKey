@@ -303,19 +303,18 @@ def main() -> None:
                 logger.error("NapCat初始化失败")
                 return
             
+            print("======================")
+            print("正在配置QQ适配器...")
+            print("======================")
+            
+            if not run_python_script("config_qq_adapter.py"):
+                logger.error("QQ适配器配置失败")
+                return
+            
             print("3秒后启动MaiBot Client...")
             safe_system_command("timeout /t 3 /nobreak > nul")
             safe_system_command("cls")
             
-            # 写入初始化完成标记（冪等，重复写入无影响）
-            try:
-                init_flag = Path(__file__).parent / 'runtime' / '.initialized'
-                init_flag.parent.mkdir(parents=True, exist_ok=True)
-                init_flag.write_text('initialized', encoding='utf-8')
-                logger.info("初始化完成标记已写入")
-            except Exception as e:
-                logger.warning(f"写入初始化完成标记失败: {e}")
-
             # 首次初始化后直接进入 start.py（主菜单/主逻辑）
             if not run_python_script("start.py"):
                 logger.error("首次运行后启动主程序失败")

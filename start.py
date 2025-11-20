@@ -14,7 +14,7 @@ except ImportError:
 import requests
 
 
-ONEKEY_VERSION = "5.0.0" 
+ONEKEY_VERSION = "6.0.0" 
 
 def get_absolute_path(relative_path: str) -> str:
     """获取绝对路径
@@ -928,120 +928,6 @@ def launch_python_cmd():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return create_cmd_window(script_dir, "echo Python environment ready. You can now run Python scripts. Type 'exit' to close.")
 
-def launch_hmml_webui():
-    pass
-    # """启动 HMML WebUI (新版目录结构 HMML2Panel + HMML2Backend)
-    # 前端：进入 HMML2Panel 目录，使用其中自带 node.exe 执行 server.cjs
-    # 后端：进入 HMML2Backend 目录，使用 runtime/python31211/python.exe 执行 start.py
-    # 兼容：若新目录不存在，则回退到旧目录( HMMLPanel / HMMLDemon )逻辑。
-    # """
-    # try:
-    #     # 新结构路径与候选文件
-    #     new_frontend_dir = get_absolute_path('modules/HMML2Panel')
-    #     new_backend_dir = get_absolute_path('modules/HMML2Backend')
-    #     possible_server_files = [
-    #         os.path.join(new_frontend_dir, 'server.cjs'),
-    #         os.path.join(new_frontend_dir, 'server.js'),
-    #         os.path.join(new_frontend_dir, 'server.mjs'),
-    #     ]
-    #     new_frontend_entry = next((p for p in possible_server_files if os.path.exists(p)), None)
-    #     node_candidates = [
-    #         os.path.join(new_frontend_dir, 'node.exe'),
-    #         get_absolute_path('runtime/nodejs/node.exe')
-    #     ]
-    #     new_node_path = next((p for p in node_candidates if os.path.exists(p)), None)
-    #     backend_entry_candidates = [
-    #         os.path.join(new_backend_dir, 'start.py'),
-    #         os.path.join(new_backend_dir, 'main.py'),
-    #         os.path.join(new_backend_dir, 'app.py')
-    #     ]
-    #     new_backend_entry = next((p for p in backend_entry_candidates if os.path.exists(p)), None)
-
-    #     # 旧结构回退路径
-    #     old_frontend_dir = get_absolute_path('modules/HMMLPanel')
-    #     old_backend_dir = get_absolute_path('modules/HMMLDemon')
-    #     old_node_path = get_absolute_path('runtime/nodejs/node.exe')
-    #     old_frontend_entry = os.path.join(old_frontend_dir, 'server.cjs')
-    #     old_backend_entry_js = os.path.join(old_backend_dir, 'start.js')
-
-    #     use_new = os.path.isdir(new_frontend_dir) and os.path.isdir(new_backend_dir)
-    #     if use_new:
-    #         missing = []
-    #         if not new_node_path:
-    #             missing.append('node.exe')
-    #         if not new_frontend_entry:
-    #             missing.append('server.(cjs|js|mjs)')
-    #         if not new_backend_entry:
-    #             missing.append('后端入口(start.py|main.py|app.py)')
-    #         if missing:
-    #             logger.error(f"HMML2 目录存在但缺少必要文件: {', '.join(missing)}")
-    #             return False
-
-    #         # Python 解释器路径（不再放 bin 子目录，兼容存在 bin 的情况）
-    #         py_candidates = [
-    #             get_absolute_path('runtime/python31211/python.exe'),
-    #             get_absolute_path('runtime/python31211/bin/python.exe')
-    #         ]
-    #         python_path = next((p for p in py_candidates if os.path.exists(p)), None)
-    #         if not python_path:
-    #             logger.error("错误：未找到 Python 解释器 runtime/python31211/python.exe")
-    #             return False
-
-    #         # 启动前端：打开浏览器 + node.exe server.cjs
-    #         frontend_cmd = f'start http://localhost:7998 && "{new_node_path}" "{new_frontend_entry}"'
-    #         frontend_ok = create_cmd_window(new_frontend_dir, frontend_cmd)
-    #         if not frontend_ok:
-    #             logger.error("启动新版前端失败")
-    #             return False
-    #         logger.info("HMML2 前端已启动 (端口:7998) ...")
-
-    #         # 启动后端：python start.py
-    #         backend_cmd = f'"{python_path}" "{new_backend_entry}"'
-    #         backend_ok = create_cmd_window(new_backend_dir, backend_cmd)
-    #         if not backend_ok:
-    #             logger.error("启动新版后端失败")
-    #             return False
-    #         logger.info("HMML2 后端已启动。")
-
-    #         logger.info("HMML WebUI (HMML2) 启动完成。")
-    #         return True
-    #     else:
-    #         logger.info("未检测到 HMML2 新版目录结构，回退到旧版 HMMLPanel/HMMLDemon 启动方式。")
-    #         # 校验旧结构
-    #         if not (os.path.isdir(old_frontend_dir) and os.path.isdir(old_backend_dir)):
-    #             logger.error("错误：既没有新版目录，也没有找到旧版 HMMLPanel/HMMLDemon 目录。")
-    #             return False
-    #         if not os.path.exists(old_node_path):
-    #             logger.error(f"错误：旧版 Node.js 不存在: {old_node_path}")
-    #             return False
-    #         if not os.path.exists(old_frontend_entry):
-    #             logger.error(f"错误：旧版缺少前端 server.cjs: {old_frontend_entry}")
-    #             return False
-    #         if not os.path.exists(old_backend_entry_js):
-    #             logger.error(f"错误：旧版缺少后端 start.js: {old_backend_entry_js}")
-    #             return False
-
-    #         # 启动旧版前端
-    #         old_frontend_cmd = f'start http://localhost:7998 && "{old_node_path}" server.cjs'
-    #         old_frontend_ok = create_cmd_window(old_frontend_dir, old_frontend_cmd)
-    #         if not old_frontend_ok:
-    #             logger.error("启动旧版前端失败")
-    #             return False
-    #         logger.info("HMML WebUI 旧版前端已启动")
-
-    #         # 启动旧版后端 (node start.js)
-    #         old_backend_cmd = f'"{old_node_path}" start.js'
-    #         old_backend_ok = create_cmd_window(old_backend_dir, old_backend_cmd)
-    #         if not old_backend_ok:
-    #             logger.error("启动旧版后端失败")
-    #             return False
-    #         logger.info("HMML WebUI 旧版后端已启动")
-    #         logger.info("HMML WebUI (旧版) 启动完成。")
-    #         return True
-    # except Exception as e:
-    #     logger.error(f"错误：启动 HMML WebUI 过程出现异常：{e}")
-    #     return False
-
 def launch_sqlite_studio():
     """启动数据库可视化管理工具"""
     # 首先检查是否存在 DB Browser for SQLite
@@ -1364,7 +1250,6 @@ class MenuManager:
             MenuItem("2", "单独启动 NapCat", handle_launch_napcat_only),
             MenuItem("3", "单独启动 Adapter", lambda: log_operation_result("启动 Adapter", launch_adapter())),
             MenuItem("4", "单独启动 麦麦主程序", lambda: log_operation_result("启动主程序", launch_main_bot())),
-            # MenuItem("5", "启动HMML WebUI", lambda: log_operation_result("启动 HMML WebUI", launch_hmml_webui())),
             MenuItem("6", "添加/修改QQ号", add_qq_number),
             MenuItem("7", "麦麦基础配置", lambda: log_operation_result("启动配置管理", launch_config_manager())),
             MenuItem("8", "修改可发消息群聊&私聊", modify_allowed_chats),
@@ -1538,7 +1423,7 @@ def open_config_file() -> bool:
     """快捷打开配置文件"""
     config_files = [
         ("MaiBot主配置", get_absolute_path('modules/MaiBot/config/bot_config.toml')),
-        ("MaiBot-LPMM知识库配置", get_absolute_path('modules/MaiBot/config/lpmm_config.toml')),
+        ("MaiBot-模型配置", get_absolute_path('modules/MaiBot/config/model_config.toml')),
         ("MaiBot环境文件(.env)", get_absolute_path('modules/MaiBot/.env')),
         ("NapCat适配器配置", get_absolute_path('modules/MaiBot-Napcat-Adapter/config.toml')),
         # 可以继续添加更多配置文件
