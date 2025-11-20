@@ -838,7 +838,8 @@ def launch_adapter():
 
 def launch_main_bot():
     main_path = get_absolute_path('modules/MaiBot')
-    command = 'start http://localhost:8001 & python bot.py'
+    python_path = get_absolute_path('runtime/python31211/bin/python.exe')
+    command = f'start http://localhost:8001 & "{python_path}" bot.py'
     return create_cmd_window(main_path, command)
 
 def update_qq_in_config(config_path: str, qq_number: str):
