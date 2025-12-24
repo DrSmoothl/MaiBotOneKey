@@ -639,7 +639,7 @@ def get_napcat_launch_mode() -> bool:
     """
     print("=== 选择 NapCat 启动模式 ===")
     print(" 1: 无头模式 (默认) : 只有命令行窗口，没有图形界面")
-    print(" 2: 有头模式 : 带QQ电脑版图形界面（不推荐）")
+    print(" 2: 有头模式 : 带QQ电脑版图形界面（不推荐，新版本NapCatQQ不再支持有头版本，极易被腾讯风控）")
     napcat_launch_choice = input("选择 NapCat 启动模式: ").strip()
     
     if napcat_launch_choice == '2':
